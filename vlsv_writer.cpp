@@ -583,6 +583,10 @@ namespace vlsv {
       else{
          // buffer the write
          addToBuffer(multiwriteOffsetPointer, writeSize, offset+unitOffset,outputType,comm);
+         // MPI_Pack has copied the data, so the type is no longer needed.
+         if (N_multiwriteUnits > 0) {
+            MPI_Type_free(&outputType);
+         }
       }
 
       // Deallocate memory:
@@ -816,6 +820,10 @@ namespace vlsv {
    {
       MPI_File_set_view(fileptr, originalOffset, originalEType, originalView, "native", MPI_INFO_NULL );
    }
+   MPI_Type_free(&viewType);
+   delete [] len;
+   delete [] disp;
+   delete [] typs;
 
    bufferTop = 0;
    startSize.clear();
@@ -860,7 +868,7 @@ namespace vlsv {
      if(bufferSize > 0) {
        // Flush the old buffer to disk before destroying it.
        emptyBuffer(comm);
-       delete outputBuffer;
+       delete [] outputBuffer; outputBuffer = NULL;
      }
      if(bSize >= std::numeric_limits<int >::max())
      {
